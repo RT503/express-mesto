@@ -33,6 +33,7 @@ module.exports.createUser = (req, res) => {
   User.create({ name, about, avatar })
     .then((user) => res.send(user))
     .catch((err) => {
+      if (err.name === 'ValidationError') return res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
     });
@@ -46,6 +47,7 @@ module.exports.updateUser = (req, res) => {
     })
     .then((user) => res.send(user))
     .catch((err) => {
+      if (err.name === 'ValidationError') return res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
     });
@@ -59,6 +61,7 @@ module.exports.updateAvatar = (req, res) => {
     })
     .then((user) => res.send(user))
     .catch((err) => {
+      if (err.name === 'ValidationError') return res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
     });

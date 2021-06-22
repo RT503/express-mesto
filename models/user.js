@@ -6,6 +6,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 2,
     maxlength: 30,
+    validate: {
+      validator(v) {
+        return v <= 2;
+      },
+      message: 'Некорректные данные переданы',
+    },
   },
   about: {
     type: String,

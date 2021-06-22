@@ -6,9 +6,6 @@ const DEFAULT_ERROR_CODE = 500;
 
 module.exports.getCards = (req, res) => {
   Card.find({})
-    .orFail(() => {
-      (res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'В базе данных нет карточек' }));
-    })
     .then((cards) => res.send(cards))
     .catch((err) => {
       if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
@@ -22,13 +19,17 @@ module.exports.postCard = (req, res) => {
   Card.create({ name, link, owner: _id })
     .then((card) => res.send(card))
     .catch((err) => {
+      if (err.name === 'ValidationError') return res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
       res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
 module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.id)
+  Card.findByIdAndRemove(req.params.cardId)
+    .orFail(() => {
+      (res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Нет карточки с таким ID' }));
+    })
     .then(() => res.send({ message: 'Удаление прошло успешно' }))
     .catch((err) => {
       if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
