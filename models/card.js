@@ -9,16 +9,19 @@ const cardSchema = new mongoose.Schema({
   },
   link: {
     type: String,
+    validate: {
+      validator: (v) => /^(https?:\/\/)(www\.)?([\da-z-.]+)\.([a-z.]{2,6})[\da-zA-Z-._~:?#[\]@!$&'()*+,;=/]*\/?#?$/.test(v),
+    },
     required: true,
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
-  likes: [{
+  likes: {
     type: mongoose.Schema.Types.ObjectId,
     default: [],
-  }],
+  },
   createdAt: {
     type: Date,
     default: Date.now,

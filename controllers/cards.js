@@ -1,62 +1,66 @@
 const Card = require('../models/card');
 
-const CAST_ERROR_CODE = 400;
-const CANNOT_FIND_ERROR_CODE = 404;
-const DEFAULT_ERROR_CODE = 500;
+const NotFoundError = require('../errors/not-found-err');
+const ValidationError = require('../errors/validation-err');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.send(cards))
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
-    });
+    .catch((err) => next(err));
 };
 
-module.exports.postCard = (req, res) => {
+module.exports.postCard = (req, res, next) => {
   const { name, link } = req.body;
-  const { _id } = req.user;
-  Card.create({ name, link, owner: _id })
+  const owner = req.user._id;
+
+  Card.create({ name, link, owner })
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === 'ValidationError') return res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
-      if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
+      if (err.name === 'ValidationError') {
+        next(new ValidationError('Введены некорректные данные'));
+      }
+      next(err);
     });
-};
+}
 
-module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .orFail(() => {
-      (res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Нет карточки с таким ID' }));
+module.exports.deleteCard = (req, res, next) => {
+  Card.findById(req.params.cardId)
+    .orFail(new NotFoundError('Нет карточки с таким ID'))
+    .then((card) => {
+      if (req.user._id === String(card.owner)) {
+        return Card.findByIdAndDelete(req.params.cardId)
+          .then(() => res.send({ message: 'Успешно удалена!' }));
+      }
+      throw new ForbiddenError('Недостаточно прав');
     })
-    .then(() => res.send({ message: 'Удаление прошло успешно' }))
     .catch((err) => {
-      if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
+      if (err.name === 'CastError') {
+        next(new NotFoundError('Нет карточки с таким ID'));
+      }
+      next(err);
     });
 };
 
-module.exports.putLike = (req, res) => {
+module.exports.putLike = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(() => {
-      (res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Нет карточки с таким ID' }));
-    })
+    .orFail(new NotFoundError('Нет карточки с таким ID'))
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
+      if (err.name === 'CastError') {
+        next(new NotFoundError('Нет карточки с таким ID'));
+      }
+      next(err);
     });
-};
+}
 
 module.exports.removeLike = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(() => {
-      (res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'Нет карточки с таким ID' }));
-    })
+    .orFail(new NotFoundError('Нет карточки с таким ID'))
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err.name === 'CastError') return res.status(CAST_ERROR_CODE).send({ message: 'Неправильный формат входных данных' });
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'На сервере произошла ошибка' });
+      if (err.name === 'CastError') {
+        next(new NotFoundError('Нет карточки с таким ID'));
+      }
+      next(err);
     });
-};
+}
