@@ -2,13 +2,10 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-const { JWT_SECRET } = process.env;
+const JWT_SECRET = 'fkawflawfoisadfl241';
 
-const BadRequestError = require('../errors/bad-request-err');
 const ExistingEmailError = require('../errors/existing-email-err');
-const ForbiddenErr = require('../errors/forbidden-err');
 const NotFoundError = require('../errors/not-found-err');
-const UnauthorizedErr = require('../errors/unauthorized-err');
 const ValidationError = require('../errors/validation-err');
 
 const SALT_ROUNDS = 10;
@@ -16,7 +13,7 @@ const SALT_ROUNDS = 10;
 module.exports.getUsers = (req, res, next) => {
   User.find({})
     .orFail(() => {
-      (res.status(CANNOT_FIND_ERROR_CODE).send({ message: 'В базе данных нет пользователей' }));
+      (res.status(404).send({ message: 'В базе данных нет пользователей' }));
     })
     .then((users) => res.send(users))
     .catch((err) => next(err));
@@ -104,19 +101,19 @@ module.exports.updateAvatar = (req, res, next) => {
 };
 
 module.exports.login = (req, res, next) => {
-  const {email, password} = req.body;
+  const { email, password } = req.body;
 
   if (!email || !password) {
     throw new ValidationError('Не введены почта или пароль');
   }
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({_id: user._id}, JWT_SECRET, {expiresIn: '7d'});
+      const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '1s' });
       return res.cookie('jwt', token, {
         maxAge: 3600000,
-        httpOnly: true,
-        sameSite: true
-      }).send({message: 'Аутентификация успешна!'});
+        httpOnly: false,
+        sameSite: false,
+      }).send({ message: 'Аутентификация успешна!' });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -124,4 +121,4 @@ module.exports.login = (req, res, next) => {
       }
       next(err);
     });
-}
+};

@@ -4,7 +4,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-const path = require('path');
 const { celebrate, Joi, errors } = require('celebrate');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -25,6 +24,7 @@ const limiter = rateLimit({
 });
 
 mongoose.connect('mongodb://localhost:27017/mestodb', {
+  useUnifiedTopology: true,
   useNewUrlParser: true,
   useCreateIndex: true,
   useFindAndModify: false,
@@ -46,6 +46,7 @@ app.post('/signin',
     }),
   }),
   login);
+
 app.post('/signup',
   celebrate({
     body: Joi.object().keys({
