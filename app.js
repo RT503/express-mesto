@@ -7,10 +7,9 @@ const bodyParser = require('body-parser');
 const { celebrate, Joi, errors } = require('celebrate');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-
+const { requestLogger, errorLogger } = require('./middlewares/Logger');
 const { createUser, login } = require('./controllers/users');
 const auth = require('./middlewares/auth');
-
 const errorHandler = require('./middlewares/errorHandler');
 const NotFoundError = require('./errors/not-found-err');
 
@@ -35,8 +34,8 @@ app.use(limiter);
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(errors());
-app.use(errorHandler);
+
+app.use(requestLogger);
 
 app.post('/signin',
   celebrate({
@@ -63,6 +62,11 @@ app.use(auth);
 
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
+
+app.use(errorLogger);
+
+app.use(errors());
+app.use(errorHandler);
 
 app.use('*', () => {
   throw new NotFoundError('Страница не найдена');

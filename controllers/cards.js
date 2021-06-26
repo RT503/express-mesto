@@ -3,9 +3,11 @@ const Card = require('../models/card');
 const NotFoundError = require('../errors/not-found-err');
 const ValidationError = require('../errors/validation-err');
 const ForbiddenError = require('../errors/forbidden-err');
+const EmptyDatabaseError = require('../errors/empty-database-err');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
+    .orFail(new EmptyDatabaseError('В базе данных нет карточек'))
     .then((cards) => res.send(cards))
     .catch((err) => next(err));
 };

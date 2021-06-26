@@ -7,14 +7,13 @@ const JWT_SECRET = 'fkawflawfoisadfl241';
 const ExistingEmailError = require('../errors/existing-email-err');
 const NotFoundError = require('../errors/not-found-err');
 const ValidationError = require('../errors/validation-err');
+const EmptyDatabaseError = require('../errors/empty-database-err');
 
 const SALT_ROUNDS = 10;
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .orFail(() => {
-      (res.status(404).send({ message: 'В базе данных нет пользователей' }));
-    })
+    .orFail(new EmptyDatabaseError('В базе данных нет пользователей'))
     .then((users) => res.send(users))
     .catch((err) => next(err));
 };
