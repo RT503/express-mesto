@@ -63,14 +63,14 @@ app.use(auth);
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
+app.use('*', () => {
+  throw new NotFoundError('Страница не найдена');
+});
+
 app.use(errorLogger);
 
 app.use(errors());
 app.use(errorHandler);
-
-app.use('*', () => {
-  throw new NotFoundError('Страница не найдена');
-});
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
