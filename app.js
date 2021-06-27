@@ -25,7 +25,7 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 });
 
 const corsConfig = {
-  origin: 'https://rt503.nomoredomains.monster/',
+  origin: ['https://rt503.nomoredomains.monster', 'http://rt503.nomoredomains.monster', 'http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
 };
 
