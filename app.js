@@ -37,7 +37,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 app.use(cors(corsConfig));
-app.options('*', cors(corsConfig));
 
 app.post('/signin',
   celebrate({
