@@ -14,8 +14,9 @@ module.exports.getCards = (req, res, next) => {
 
 module.exports.postCard = (req, res, next) => {
   const { name, link } = req.body;
+  const userId = req.user._id;
 
-  Card.create({ name, link, owner: req.user._id })
+  Card.create({ name, link, owner: userId })
     .then((card) => res.send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -26,11 +27,13 @@ module.exports.postCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findById(req.params.cardId)
+  const id = req.params.cardId;
+
+  Card.findById({ _id: id })
     .orFail(new NotFoundError('Нет карточки с таким ID'))
     .then((card) => {
       if (req.user._id === String(card.owner)) {
-        return Card.findByIdAndDelete(req.params.cardId)
+        Card.findByIdAndDelete({ _id: id })
           .then(() => res.send({ message: 'Успешно удалена!' }));
       }
       throw new ForbiddenError('Недостаточно прав');
