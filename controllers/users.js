@@ -1,15 +1,14 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
 
 const { NODE_ENV, JWT_SECRET } = process.env;
+const User = require('../models/user');
 
 const ExistingEmailError = require('../errors/existing-email-err');
 const NotFoundError = require('../errors/not-found-err');
 const ValidationError = require('../errors/validation-err');
 const EmptyDatabaseError = require('../errors/empty-database-err');
-
-const SALT_ROUNDS = 10;
+const BadRequestError = require('../errors/bad-request-err');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
@@ -19,7 +18,7 @@ module.exports.getUsers = (req, res, next) => {
 };
 
 module.exports.getUserById = (req, res, next) => {
-  User.findById(req.params.id)
+  User.findById(req.params.userId)
     .orFail(new NotFoundError('Нет пользователя с таким ID'))
     .then((user) => res.send(user))
     .catch((err) => {
@@ -46,23 +45,34 @@ module.exports.createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
-  bcrypt.hash(password, SALT_ROUNDS)
-    .then((hash) => User.create({
-      name,
-      about,
-      avatar,
-      email,
-      password: hash,
-    }))
-    .then((user) => res.send(user))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new ValidationError('Переданы некорректные данные!'));
-      } else if (err.code === 11000) {
-        next(new ExistingEmailError('Пользователь с такой почтой уже зарегистрирован'));
+
+  if (!email || !password) {
+    throw new BadRequestError('Email и пароль не должны быть пустыми');
+  }
+  User.findOne({ email })
+    .then((existedUser) => {
+      if (existedUser) {
+        throw new ExistingEmailError('Пользователь с таким email уже существует');
       }
-      next(err);
-    });
+
+      bcrypt.hash(password, 10)
+        .then((hash) => User.create({
+          name,
+          about,
+          avatar,
+          email,
+          password: hash,
+        }))
+        .then((createdUser) => {
+          if (!createdUser) {
+            throw new BadRequestError('Переданы некорректные данные');
+          }
+
+          User.findOne({ email })
+            .then((user) => res.send(user));
+        });
+    })
+    .catch(next);
 };
 
 module.exports.updateUser = (req, res, next) => {
@@ -105,9 +115,19 @@ module.exports.login = (req, res, next) => {
   if (!email || !password) {
     throw new ValidationError('Не введены почта или пароль');
   }
-  return User.findUserByCredentials(email, password)
+
+  User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'secret-key', { expiresIn: '7d' });
+      if (!user) {
+        throw new BadRequestError('Неправильные почта или пароль');
+      }
+
+      const token = jwt.sign(
+        { _id: user._id },
+        NODE_ENV === 'production' ? JWT_SECRET : 'secret-key',
+        { expiresIn: '7d' },
+      );
+
       res.cookie('jwt', token, {
         httpOnly: true,
         secure: true,
@@ -115,10 +135,13 @@ module.exports.login = (req, res, next) => {
         expiresIn: (3600 * 24 * 7),
       }).send({ message: 'Аутентификация успешна!' });
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new ValidationError('Введены некорректные данные'));
-      }
-      next(err);
-    });
+    .catch(next);
+};
+
+module.exports.signout = (req, res) => {
+  res.clearCookie('jwt', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  }).send({ message: 'Успешный выход' });
 };
