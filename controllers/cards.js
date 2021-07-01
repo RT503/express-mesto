@@ -44,7 +44,10 @@ module.exports.deleteCard = (req, res, next) => {
 };
 
 module.exports.putLike = (req, res, next) => {
-  Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
+  const id = req.params.cardId;
+  const userId = req.user._id;
+
+  Card.findByIdAndUpdate(id, { $addToSet: { likes: userId } }, { new: true })
     .orFail(new NotFoundError('Нет карточки с таким ID'))
     .then((card) => res.send(card))
     .catch((err) => {
@@ -56,7 +59,10 @@ module.exports.putLike = (req, res, next) => {
 };
 
 module.exports.removeLike = (req, res, next) => {
-  Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
+  const id = req.params.cardId;
+  const userId = req.user._id;
+
+  Card.findByIdAndUpdate(id, { $pull: { likes: userId } }, { new: true })
     .orFail(new NotFoundError('Нет карточки с таким ID'))
     .then((card) => res.send(card))
     .catch((err) => {
