@@ -2,7 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-const JWT_SECRET = 'fkawflawfoisadfl241';
+const { NODE_ENV, JWT_SECRET } = process.env;
 
 const ExistingEmailError = require('../errors/existing-email-err');
 const NotFoundError = require('../errors/not-found-err');
@@ -107,11 +107,12 @@ module.exports.login = (req, res, next) => {
   }
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-      return res.cookie('jwt', token, {
-        maxAge: 3600000,
+      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'secret-key', { expiresIn: '7d' });
+      res.cookie('jwt', token, {
         httpOnly: true,
+        secure: true,
         sameSite: 'none',
+        expiresIn: (3600 * 24 * 7),
       }).send({ message: 'Аутентификация успешна!' });
     })
     .catch((err) => {

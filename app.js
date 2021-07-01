@@ -13,11 +13,14 @@ const auth = require('./middlewares/auth');
 const errorHandler = require('./middlewares/errorHandler');
 const NotFoundError = require('./errors/not-found-err');
 
-const { PORT = 3000 } = process.env;
+const {
+  PORT = 3000,
+  MONGODB_URL = 'mongodb://localhost:27017/mestodb',
+} = process.env;
 
 const app = express();
 
-mongoose.connect('mongodb://localhost:27017/mestodb', {
+mongoose.connect(MONGODB_URL, {
   useUnifiedTopology: true,
   useNewUrlParser: true,
   useCreateIndex: true,
