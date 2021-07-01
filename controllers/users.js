@@ -18,7 +18,8 @@ module.exports.getUsers = (req, res, next) => {
 };
 
 module.exports.getUserById = (req, res, next) => {
-  User.findById(req.params.userId)
+  const { userId } = req.params;
+  User.findById(userId)
     .orFail(new NotFoundError('Нет пользователя с таким ID'))
     .then((user) => res.send(user))
     .catch((err) => {
@@ -32,7 +33,7 @@ module.exports.getUserById = (req, res, next) => {
 module.exports.getUser = (req, res, next) => {
   User.findById(req.user._id)
     .orFail(new NotFoundError('Нет пользователя с таким ID'))
-    .then((user) => res.send({ user }))
+    .then((user) => res.send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         next(new NotFoundError('Нет пользователя с таким ID!'));
@@ -77,11 +78,11 @@ module.exports.createUser = (req, res, next) => {
 
 module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
-  const id = req.user._id;
+  const userId = req.user._id;
   if (!name || !about) {
     throw new ValidationError('Заполните все поля!');
   }
-  User.findByIdAndUpdate(id, { name, about }, { new: true, runValidators: true, upsert: true })
+  User.findByIdAndUpdate(userId, { name, about }, { new: true, runValidators: true, upsert: true })
     .orFail(new NotFoundError('Нет пользователя с таким ID'))
     .then((user) => res.send(user))
     .catch((err) => {
@@ -93,14 +94,14 @@ module.exports.updateUser = (req, res, next) => {
 };
 
 module.exports.updateAvatar = (req, res, next) => {
+  const userId = req.user._id;
   const { avatar } = req.body;
-  const id = req.user._id;
   if (!avatar) {
     throw new ValidationError('Введены некорректные данные');
   }
-  User.findByIdAndUpdate(id, { avatar }, { new: true, runValidators: true, upsert: true })
+  User.findByIdAndUpdate(userId, { avatar }, { new: true, runValidators: true, upsert: true })
     .orFail(new NotFoundError('Нет пользователя с таким ID'))
-    .then((user) => res.send(user))
+    .then((updatedAvatar) => res.send(updatedAvatar))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new ValidationError('Введены некорректные данные'));
